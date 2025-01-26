@@ -1,0 +1,96 @@
+<script>
+
+  // Contraseña quemada para autenticar
+
+  const PASSWORD="admin123";
+
+  // Enfocar el campo de texto al cargar la página
+  window.onload = function () {
+    const inputCedula = document.getElementById("txtDocumento");
+    inputCedula.focus();
+
+    // Detectar cuando el lector de código de barras o el usuario presiona Enter
+    inputCedula.addEventListener("keypress", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault(); // Evita el comportamiento predeterminado de "Enter"
+        registrarIngreso(); // Llama automáticamente a la función de registro
+      }
+    });
+  };
+
+  // Capturar el evento de envío del formulario manualmente (para el botón Registrar Ingreso)
+  document.getElementById("ForPagPtimaria").addEventListener("submit", function (event) {
+    event.preventDefault(); // Evita que el formulario recargue la página
+    registrarIngreso(); // Llama a la función de registro
+  });
+
+  // Función para registrar ingreso
+  function registrarIngreso() {
+    const cedula = document.getElementById("txtDocumento").value.trim();
+    if (!cedula) {
+      mostrarAviso("Por favor, ingrese una cédula válida.");
+      return;
+    }
+
+    // Llamada al servidor de Google Apps Script para registrar el ingreso
+    google.script.run
+      .withSuccessHandler((mensaje) => {
+        console.log(mensaje)
+        mostrarAviso(mensaje); // Muestra mensaje de éxito
+        document.getElementById("txtDocumento").value = ""; // Limpia el campo
+        document.getElementById("txtDocumento").focus(); // Vuelve a enfocar el campo
+      })
+      .withFailureHandler((error) => {
+        mostrarAviso(`${error.message}`); // Muestra mensaje de error
+      })
+      .registrarIngresogs(cedula); // Llama a la función en el servidor
+  }
+
+  // Función para redirigir a la página de monitoreo
+  function goToMonitor() {
+    const userPassword = prompt("Por favor, ingrese la contraseña para acceder al monitoreo:");
+
+    if (userPassword === null) {
+      mostrarAviso("Operación cancelada.", "error");
+      return; // Usuario canceló el prompt
+    }
+
+
+    if (userPassword === PASSWORD) {
+      // Contraseña válida, redirigir al monitoreo
+      const baseUrl = "https://script.google.com/a/macros/parqueexplora.org/s/AKfycbyiHrLw5wDax5ImzNxtbo8GGHKZrGFKluWuauDQbJA4/dev";
+      const fullUrl = `${baseUrl}?page=PagSecundaria`;
+      console.log(`Redirigiendo a: ${fullUrl}`);
+      window.open(fullUrl, "_blank"); // Abre la página en una nueva pestaña
+    } else {
+      // Contraseña inválida
+      mostrarAviso("Contraseña incorrecta. Acceso denegado.", "error");
+    }
+
+    
+/**
+    const baseUrl = "https://script.google.com/a/macros/parqueexplora.org/s/AKfycbyiHrLw5wDax5ImzNxtbo8GGHKZrGFKluWuauDQbJA4/dev";
+    const fullUrl = `${baseUrl}?page=PagSecundaria`;
+    console.log(`Redirigiendo a: ${fullUrl}`); // Verifica la URL en consola
+    window.open(fullUrl, "_blank"); // Abre la página de monitoreo en una nueva pestaña
+    */
+  }
+
+  function mostrarAviso(mensaje, tipo= "error"){
+
+    const mensajeAviso=document.getElementById("mensajeAviso")
+
+    if(mensaje){
+
+      mensajeAviso.textContent=mensaje; //muestrame el mensaje
+      mensajeAviso.style.display="block"; // haz visible el contenedor
+      mensajeAviso.className = `text-center ${tipo === "error" ? "text-danger" : "text-success"}`; // Estilo dinámico
+    } else{
+
+      mensajeAviso.textContent=""; //Limpia el mensaje
+      mensajeAviso.style.display="none";
+    }
+  }
+
+
+</script>

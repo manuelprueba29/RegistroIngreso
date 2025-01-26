@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Ingreso</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <?!= include('style.html'); ?> <!-- Incluye los estilos externos -->
+</head>
+
+
+<body>
+  <section class="d-flex justify-content-center align-items-center vh-100">
+    <div class="p-4 border rounded" style="max-width: 400px; background-color: #f8f9fa;">
+
+      <form id="ForPagPtimaria" name="ForPagPtimaria" class="needs-validation" novalidate >
+
+
+        <!-- Primera fila -->
+
+                <div class="form-group">
+                  <label for="txtDocumento">Cédula:</label>
+                  <input type="text" class="form-control" id="txtDocumento" name="documento" >
+                </div>
+
+                 <!-- Botones -->
+                <button id="btnRegistrar" type="button" class="btn btn-primary btn-block mb-2" onclick="registrarIngreso()">Registrar Ingreso</button>
+                <button id="btnMonitorear" type="button" class="btn btn-secondary btn-block" onclick="goToMonitor()"> Monitorear Ingreso</button>
+      </form>
+       <div id="mensajeAviso" class="text-center text-danger" style="display: none; margin-top: 10px; font-weight: bold;"></div>
+    </div>
+    
+  </section>
+ 
+   <?!= include('js.html'); ?> <!-- Incluye los scripts externos -->
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitorear Ingreso</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <?!= include('style2.html'); ?> <!-- Incluye los estilos externos -->
+</head>
+
+<body>
+  <div class="form-container">
+    <form id="ForPagMonitoreo" name="ForPagMonitoreo" class="needs-validation" novalidate>
+      <h2 class="text-center mb-4">Historial de Ingresos</h2>
+
+      <!-- Campo para ingresar la cédula -->
+      <div class="form-group mb-3">
+        <label for="searchCedula">Cédula:</label>
+        <input type="text" id="searchCedula" class="form-control" placeholder="Ingrese la cédula" name="cedula">
+      </div>
+
+      <!-- Campo para filtrar por mes -->
+      <div class="form-group mb-3">
+        <label for="filterDate">Fecha:</label>
+        <input type="month" id="filterDate" class="form-control" placeholder="Seleccione el mes" name="fecha">
+      </div>
+
+      <!-- Campo para seleccionar categoría  onchange="handleFilterChange(this.value)" -->
+      <div class="form-group mb-3">
+        <label for="cboCategoria">Filtrar por categoría:</label>
+          <select id="cboCategoria" class="form-control" >
+           <option value="" disabled selected>Seleccione una categoría</option>
+            <option value="cedula">Filtrar por cédula</option>
+            <option value="cedulaYMes">Filtrar por cédula y mes</option>
+          </select>
+      </div>
+
+     
+
+      <!-- Tabla para mostrar los resultados -->
+      <table class="table table-striped">
+        
+        <thead>
+          <tr>
+            <th>Documento</th>
+            <th>Nombre</th>
+            <th>Jefe Directo</th>
+            <th>Área</th>
+            <th>Fecha Ingreso</th>
+            <th>Hora Ingreso</th>
+          </tr>
+        </thead>
+
+        <tbody id="tableBody">
+          <!-- Los datos dinámicos se insertarán aquí -->
+        </tbody>
+      </table>
+      <div id="mensajeError" class="text-center text-danger" style="display: none; font-weight: bold;"></div>
+    </form>
+  </div>
+  <?!= include('jspagina2.html'); ?> <!-- Incluye los scripts externos -->
+
+</body>
+
+
+</html>

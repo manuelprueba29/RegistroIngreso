@@ -1,0 +1,214 @@
+<script>
+
+  // Función para manejar el cambio de filtro
+function handleFilterChange(value) {
+  const cedula = document.getElementById("searchCedula").value.trim();
+  const mes = document.getElementById("filterDate").value.trim();
+
+  // Limpia mensajes previos
+    mostrarMensajeError("");
+
+  if (value === "cedula") {
+    if (!validarCedula(cedula)) return;
+    buscarHistorial(); // Llama a la función que filtra por cédula
+  }
+
+  if (value === "cedulaYMes") {
+    if (!validarCedula(cedula) || !validarMes(mes)) return;
+    filtrarpormes(); // Llama a la función que filtra por cédula y mes
+  }
+}
+
+// Hacer que la función buscarHistorial esté disponible globalmente
+ // Función para buscar historial por cédula
+function buscarHistorial(event) {
+  if (event) event.preventDefault();
+  const cedula = document.getElementById("searchCedula").value.trim();
+
+  // Limpia mensajes previos
+  mostrarMensajeError("");
+
+
+   // Limpia la tabla antes de realizar la búsqueda
+  const tableBody = document.getElementById("tableBody");
+  tableBody.innerHTML = ""; // Limpia la tabla
+
+  if (!validarCedula(cedula)) return;
+
+  google.script.run
+    .withSuccessHandler((data) => {
+      if (!Array.isArray(data) || data.length === 0) {
+        mostrarMensajeError("No se encontraron datos para mostrar.");
+        document.getElementById("cboCategoria").selectedIndex = 0;
+        return;
+      }
+
+      mostrarMensajeError(""); // Limpia el mensaje de error si los datos son válidos
+      renderTable(data); // Renderiza los datos en la tabla
+
+    // Reinicia los campos del formulario, pero no la tabla
+    resetFormFields();
+
+    })
+    .withFailureHandler((error) => {
+      console.error("Error en el servidor:", error.message);
+      mostrarMensajeError(`Ocurrió un error al cargar los datos: ${error.message}`);
+    })
+    .getHistorialPorCedula(cedula);
+}
+
+
+
+// Función para filtrar por mes
+// Función para filtrar por cédula y mes
+
+function filtrarpormes() {
+  const cedula = document.getElementById("searchCedula").value.trim();
+  const fecha = document.getElementById("filterDate").value.trim();
+
+
+
+  // Limpia mensajes previos
+  mostrarMensajeError("");
+
+  if (!validarCedula(cedula) || !validarMes(fecha)) {
+    mostrarMensajeError("Por favor, complete los campos correctamente.");
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler((data) => {
+      console.log(`Tipo de data: ${typeof data}`);
+      console.log("Contenido de data:", data);
+
+      if (!Array.isArray(data) || data.length === 0) {
+        mostrarMensajeError("No se encontraron datos para mostrar.");
+        document.getElementById("cboCategoria").selectedIndex = 0;
+        document.getElementById("filterDate").value = "";
+        return;
+      }
+
+      mostrarMensajeError(""); // Limpia el mensaje de error si los datos son válidos
+      renderTable(data); // Renderiza los datos en la tabla
+
+    // Reinicia los campos del formulario, pero no la tabla
+    resetFormFields();
+
+    })
+    .withFailureHandler((error) => {
+      console.error("Error en el servidor:", error.message);
+      mostrarMensajeError(`Ocurrió un error al cargar los datos: ${error.message}`);
+    })
+    .getHistorialPorCedulaYMes(cedula, fecha);
+}
+
+
+
+
+// Asociar la función al evento 'change'
+//document.getElementById("filterDate").addEventListener("change", filtrarpormes);
+
+// Validar cédula
+function validarCedula(cedula) {
+  if (!cedula) {
+    mostrarMensajeError("Por favor, ingrese una cédula válida.");
+    document.getElementById("cboCategoria").selectedIndex = 0;
+    return false;
+  }
+  return true;
+}
+
+
+// Validar mes
+function validarMes(mes) {
+  if (!mes) {
+    mostrarMensajeError("Por favor, seleccione una fecha antes de filtrar por cédula y mes.");
+    document.getElementById("cboCategoria").selectedIndex = 0;
+    return false;
+  }
+  return true;
+}
+
+
+// Función para renderizar la tabla
+function renderTable(data) {
+  const tableBody = document.getElementById("tableBody");
+
+  if (!tableBody) {
+    console.error("El elemento con id 'tableBody' no existe en el DOM.");
+    return;
+  }
+
+  tableBody.innerHTML = ""; // Limpia la tabla
+
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    const row = tableBody.insertRow();
+    const cell = row.insertCell(0);
+    cell.colSpan = 5; // Ocupa todas las columnas de la tabla
+    cell.textContent = "No hay registros con los datos ingresados.";
+    cell.className = "text-center text-danger"; // Estilo centrado y color rojo
+    return;
+  }
+
+  data.forEach((row) => {
+    const newRow = tableBody.insertRow();
+    newRow.insertCell(0).textContent = row.documento || "N/A";
+    newRow.insertCell(1).textContent = row.nombre || "N/A";
+    newRow.insertCell(2).textContent = row.jefeDirecto || "N/A";
+    newRow.insertCell(3).textContent = row.area || "N/A"; 
+    newRow.insertCell(4).textContent = row.fechaIngreso || "N/A";
+    newRow.insertCell(5).textContent = row.horaIngreso || "N/A";
+  });
+  
+}
+
+// Función para mostrar mensajes de error
+function mostrarMensajeError(mensaje) {
+  const mensajeError = document.getElementById("mensajeError");
+  if (mensaje) {
+    mensajeError.textContent = mensaje; // Muestra el mensaje
+    mensajeError.style.display = "block"; // Haz visible el contenedor
+  } else {
+    mensajeError.textContent = ""; // Limpia el mensaje
+    mensajeError.style.display = "none"; // Oculta el contenedor
+  }
+}
+
+/**
+// Asociar eventos al DOM
+document.getElementById("filterDate").addEventListener("change", filtrarpormes);
+document.getElementById("ForPagMonitoreo").addEventListener("submit", function (event) {
+  event.preventDefault();
+  buscarHistorial();
+});
+*/
+
+// Asociar eventos al DOM
+  document.getElementById("cboCategoria").addEventListener("change", (event) => {
+    const selectedValue = event.target.value;// Obtiene el valor seleccionado
+    handleFilterChange(selectedValue); // Llama a la función cuando el usuario selecciona una opción
+  });
+
+
+  // Manejar el evento de envío del formulario para evitar recarga
+document.getElementById("ForPagMonitoreo").addEventListener("submit", function (event) {
+  event.preventDefault(); // Prevenir recarga de la página
+  mostrarMensajeError("Por favor, seleccione una categoría y complete los campos.");
+  //buscarHistorial(); // Ejecutar la búsqueda
+});
+
+
+function resetFormFields() {
+  // Limpia los campos de entrada de texto
+  document.getElementById("searchCedula").value = "";
+  document.getElementById("filterDate").value = "";
+
+  // Restaura el estado inicial del select
+  document.getElementById("cboCategoria").selectedIndex = 0;
+
+  // Limpia el mensaje de error
+  mostrarMensajeError("");
+}
+
+
+</script>
