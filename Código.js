@@ -1,10 +1,24 @@
 //como hacer para que una vez alla sido registrado por ese día 
+//Futronic FS80H/FS88H, SecuGen Hamster Pro 20
+//=IMAGE("https://quickchart.io/barcode?text=" & A2 & "&width=300&height=100&format=png&type=code128")
+//=IMAGE("https://quickchart.io/barcode?text=" & A2 & "&width=300&height=100&format=png&type=code128&addText=true&textSize=20&textMargin=10")
+
 const SPREADSHEET_ID="1g1ooF-btFbmVnc1W_RueL3RNasGaGacQSdTh66A9Nrg";
+const VALID_TOKEN = "abc123secureToken"; // Puedes generar uno más seguro
+
 
 function doGet(e) {
   const page = e.parameter.page || 'PagPrincipal'; // Carga 'PagPrincipal' si no se especifica una página
+  const token= e.parameter.token;
+
   Logger.log(`Cargando la página: ${page}`);
+
+  if(page == 'PagSecundaria' && !isValidToken(token)){
+
+        return HtmlService.createHtmlOutput("Acceso denegado. Debe autenticarse para ver esta página.");
+  }
   
+
   try {
     return HtmlService.createTemplateFromFile(page).evaluate()
       .setTitle('Sistema de Monitoreo')
@@ -17,73 +31,214 @@ function doGet(e) {
 }
 
 
+// Generar un token único
+function generarTokenUnico() {
+  const token = Utilities.getUuid(); // Genera un token único
+  const cache = CacheService.getUserCache(); // Cache específico para el usuario
+  cache.put(token, "activo", 36000); // Token válido por 5 minutos (300 segundos)
+  return token;
+}
+
+
+/** 
+function isValidToken(token) {
+  return token === VALID_TOKEN;
+}
+*/
+
+// Validar el token y asegurarse de que solo se use una vez
+function isValidToken(token) {
+  const cache = CacheService.getUserCache();
+  return estadoToken = cache.get(token)=="activo";
+}
+
+
+
+// Cargar empleados en caché
 function include(filename){
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
+/** 
+function loadEmpleadosData() {
+  const cache = CacheService.getScriptCache(); // Cache para toda la ejecución
+  
+  let empleadosJSON = cache.get("empleadosData"); // Intenta obtener los datos almacenados
 
+  if (!empleadosJSON) {
+    // Si no está en cache, lee desde la hoja y lo guarda
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const empleadosSheet = ss.getSheetByName("Empleados");
+    const empleadosData = empleadosSheet.getDataRange().getValues();
+
+    const empleadosMap = new Map(empleadosData.map(row => [
+      row[0].toString(), // Cédula como clave
+      { cedula: row[0].toString(), nombre: row[1], area: row[2], jefe: row[3] }
+    ]));
+
+    empleadosJSON = JSON.stringify(Object.fromEntries(empleadosMap)); // Convertir el Map a JSON
+    cache.put("empleadosData", empleadosJSON, 3600); // Guardar en cache por 1 hora (3600 segundos)
+  }
+
+
+  return new Map(Object.entries(JSON.parse(empleadosJSON))); // Devolver datos en formato Map
+}
+*/
+
+function loadEmpleadosData() {
+  const cache = CacheService.getScriptCache();
+  let empleadosMap;
+
+  const empleadosJSON = cache.get("empleadosData");
+  Logger.log("Datos del caché: " + empleadosJSON);  // Verifica el formato
+
+  if (empleadosJSON) {
+    try {
+      const empleadosArray = JSON.parse(empleadosJSON);
+
+      // Asegúrate de que sea un array antes de crear el Map
+      if (Array.isArray(empleadosArray)) {
+        empleadosMap = new Map(empleadosArray);
+      } else {
+        throw new Error("Los datos del caché no están en el formato correcto.");
+      }
+    } catch (error) {
+      Logger.log("Error al parsear el JSON del caché: " + error.message);
+      cache.remove("empleadosData"); // Limpia la caché si hay un problema
+      return loadEmpleadosData();    // Vuelve a cargar desde la hoja
+    }
+  } else {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const empleadosSheet = ss.getSheetByName("Empleados");
+    const empleadosData = empleadosSheet.getDataRange().getValues();
+
+    empleadosMap = new Map();
+    empleadosData.forEach(row => {
+      const cedula = row[0]?.toString();
+      if (cedula) {
+        empleadosMap.set(cedula, {
+          cedula: cedula,
+          nombre: row[1] || "N/A",
+          area: row[2] || "N/A",
+          jefe: row[3] || "N/A"
+        });
+      }
+    });
+
+    // Guarda correctamente como un array de pares clave-valor
+    cache.put("empleadosData", JSON.stringify(Array.from(empleadosMap.entries())), 3600);
+  }
+
+  return empleadosMap;
+}
+
+
+
+
+// Actualizar caché de empleados
+  function actualizarCache() {
+  const cache = CacheService.getScriptCache();
+  cache.remove("empleadosData"); // Elimina los datos en memoria
+  loadEmpleadosData(); // Carga nuevamente los datos en cache
+  return "Cache de empleados actualizado.";
+}
+
+
+/** 
+// Función para registrar ingreso
 function registrarIngresogs(cedula) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID); // Reemplaza por el ID de tu hoja
-  const empleadosSheet = ss.getSheetByName("Empleados");
-  const registroSheet = ss.getSheetByName("RegistroIngreso");
-
-  const empleadosData = empleadosSheet.getDataRange().getValues();
-
-  const empleadosMap = new Map(empleadosData.map(row => [row[0].toString(), row])); // Mapa {cedula: fila}
-  const empleado =  empleadosMap.get(cedula);
-
-  //const empleado = empleadosData.find(row => row[0].toString() === cedula); // Busca la cédula en la columna A (índice 0)
+  const empleadosMap = loadEmpleadosData(); // Cargar los datos desde la memoria cache
+  const empleado = empleadosMap.get(cedula); // Buscar en el Map sin acceder a Google Sheets
 
   if (!empleado) {
     throw new Error("Cédula no encontrada en la hoja de empleados.");
+    
   }
 
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const registroSheet = ss.getSheetByName("RegistroIngreso");
+  
   // Validación para evitar duplicados por el mismo día
-  const [cedulaa, nombre, area, jefe] = empleado; // Extrae datos de la fila correspondiente
-  const hoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  const hoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd").toString();
   const registros = registroSheet.getDataRange().getValues();
+
+  //const existeHoy = registros.some(row => row[1].toString() === cedula && row[5] === hoy);
+
+
+  // Buscar si ya hay un registro hoy y obtener la hora del registro anterior
+  //let horaRegistroAnterior = "N/A"; // Valor predeterminado en caso de que no se encuentre
 
   const existeHoy = registros.some(row => {
     // Asegúrate de que la fecha esté en el formato correcto para comparar
     const fechaRegistro = row[5] ? Utilities.formatDate(new Date(row[5]), Session.getScriptTimeZone(), "yyyy-MM-dd") : null;
     return row[1].toString() === cedula && fechaRegistro === hoy;
   });
+  
 
-
-  //const existeHoy = registros.some(row => row[1].toString() === cedula && row[5] === hoy);
+  Logger.log(`hoy: ${hoy}, tipo: ${typeof hoy}`);
+  Logger.log(`existenciahoy: ${existeHoy}, horaRegistroAnterior: `);
+  
 
   if (existeHoy) {
-    throw new Error(`${nombre} Ya existe un registro para la cédula ${cedulaa} en el día ${hoy}.`);
+    throw new Error(`${empleado.nombre} Ya tiene un registro para hoy (${hoy}). Su hora de registro fue a las .`);
   }
 
-  if (empleado) {
-    //const [cedula, nombre, area, jefe] = empleado; // Extrae datos de la fila correspondiente
-    const fechaIngreso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"); // Fecha y hora actual
-    const horaIngreso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm:ss"); // Solo la hora como texto
-    const idSolicitud = Date.now(); // Genera un ID único basado en el timestamp
+  // Agregar el nuevo registro
+  const fechaIngreso = hoy;
+  const horaIngreso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm:ss");
+  const idSolicitud = Date.now();
 
-    // Agrega una nueva fila en RegistroIngreso
-    registroSheet.appendRow([
-      idSolicitud,
-      cedula,
-      nombre,
-      jefe,
-      area,
-      fechaIngreso, // Fecha en formato yyyy-MM-dd
-      horaIngreso,  // Hora en formato HH:mm:ss como string
-      //fechaIngreso.split(' ')[0],
-      //fechaIngreso.split(' ')[1],
-    ]);
-  
-    return `Ingreso registrado correctamente para ${nombre}.`;
-  } else {
-    throw new Error("Cédula no encontrada en la hoja de empleados.");
-  }
+  registroSheet.appendRow([
+    idSolicitud, empleado.cedula, empleado.nombre, empleado.jefe, empleado.area, fechaIngreso, horaIngreso
+  ]);
+
+  return `Ingreso registrado correctamente para ${empleado.nombre}.`;
+
 }
 
+*/
 
+// Función para registrar ingreso
+function registrarIngresogs(cedula) {
+  const empleadosMap = loadEmpleadosData(); // Cargar los datos desde la memoria cache
+  const empleado = empleadosMap.get(cedula); // Buscar en el Map sin acceder a Google Sheets
 
+  if (!empleado) {
+    throw new Error("Cédula no encontrada en la hoja de empleados.");
+  }
 
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const registroSheet = ss.getSheetByName("RegistroIngreso");
+  
+  // Validación para evitar duplicados por el mismo día
+  const hoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd").toString();
+  const registros = registroSheet.getDataRange().getDisplayValues(); // Obtener valores visibles (formateados)
+
+  // Buscar si ya hay un registro hoy y obtener la hora del registro anterior
+  const registroHoy = registros.find(row => {
+    const fechaRegistro = row[5] ? row[5] : null; // Columna de fecha (formato texto)
+    return row[1].toString() === cedula && fechaRegistro === hoy;
+  });
+
+  Logger.log(`hoy: ${hoy}, tipo: ${typeof hoy}`);
+  Logger.log(`existenciahoy: ${registroHoy}, horaRegistroAnterior: `);
+
+  if (registroHoy) {
+    const horaRegistroAnterior = registroHoy[6]; // Columna de la hora de registro
+    throw new Error(`${empleado.nombre} ya tiene un registro para hoy (${hoy}). Su hora de registro fue a las ${horaRegistroAnterior}.`);
+  }
+
+  // Agregar el nuevo registro
+  const fechaIngreso = hoy;
+  const horaIngreso = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm:ss");
+  const idSolicitud = Date.now();
+
+  registroSheet.appendRow([
+    idSolicitud, empleado.cedula, empleado.nombre, empleado.jefe, empleado.area, fechaIngreso, horaIngreso
+  ]);
+
+  return `Ingreso registrado correctamente para ${empleado.nombre}.`;
+}
 
 
 //---------------------------------- segunda parte -------------------------------------------------------------------
@@ -155,9 +310,25 @@ function getHistorialPorCedulaYMes(cedula, mes) {
   }));
 }
 
+// Generar códigos de barras para cédulas
+function generarCodigosDeBarras() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName("Empleados"); // Asegúrate de que el nombre es correcto
 
+  const lastRow = sheet.getLastRow();
+  const datos = sheet.getRange(2, 1, lastRow - 1, 1).getValues(); // Obtener cédulas desde A2:A
 
+  for (let i = 0; i < datos.length; i++) {
+    let cedula = datos[i][0];
+    if (!cedula) continue;
 
+    let url = `https://quickchart.io/barcode?text=${cedula}&width=300&height=100&format=png&type=code128&addText=true&textSize=16&textMargin=10`;
+    
+    sheet.getRange(i + 2, 5).setFormula(`=IMAGE("${url}")`); // Insertar imagen en columna E
+  }
+
+  SpreadsheetApp.getUi().alert("Códigos de barras generados correctamente.");
+}
 
 
 

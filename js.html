@@ -1,9 +1,5 @@
 <script>
-
   // Contraseña quemada para autenticar
-
-  const PASSWORD="admin123";
-
   // Enfocar el campo de texto al cargar la página
   window.onload = function () {
     const inputCedula = document.getElementById("txtDocumento");
@@ -26,29 +22,44 @@
 
   // Función para registrar ingreso
   function registrarIngreso() {
+
     const cedula = document.getElementById("txtDocumento").value.trim();
     if (!cedula) {
       mostrarAviso("Por favor, ingrese una cédula válida.");
       return;
     }
 
+    //Muestra el spinner antes de hacer la peticion
+    document.getElementById("spinner").style.display="block";
+
     // Llamada al servidor de Google Apps Script para registrar el ingreso
     google.script.run
       .withSuccessHandler((mensaje) => {
         console.log(mensaje)
-        mostrarAviso(mensaje); // Muestra mensaje de éxito
+        mostrarAviso(mensaje, "succes"); // Muestra mensaje de éxito
         document.getElementById("txtDocumento").value = ""; // Limpia el campo
         document.getElementById("txtDocumento").focus(); // Vuelve a enfocar el campo
       })
       .withFailureHandler((error) => {
         mostrarAviso(`${error.message}`); // Muestra mensaje de error
+        document.getElementById("txtDocumento").value = ""; // Limpia el campo
+        document.getElementById("txtDocumento").focus(); // Vuelve a enfocar el campo
       })
       .registrarIngresogs(cedula); // Llama a la función en el servidor
+
+      //Ocultar el spinner después de 2 segundos (simulacion de espera)
+
+      setTimeout(() => {
+        document.getElementById("spinner").style.display = "none";
+      }, 2000);
   }
 
+/**
   // Función para redirigir a la página de monitoreo
   function goToMonitor() {
+
     const userPassword = prompt("Por favor, ingrese la contraseña para acceder al monitoreo:");
+    const PASSWORD="admin123"; // Cambia esto por tu contraseña real
 
     if (userPassword === null) {
       mostrarAviso("Operación cancelada.", "error");
@@ -58,8 +69,10 @@
 
     if (userPassword === PASSWORD) {
       // Contraseña válida, redirigir al monitoreo
+      const token = "abc123secureToken"; // El mismo token que usas en `isValidToken`
       const baseUrl = "https://script.google.com/a/macros/parqueexplora.org/s/AKfycbyiHrLw5wDax5ImzNxtbo8GGHKZrGFKluWuauDQbJA4/dev";
-      const fullUrl = `${baseUrl}?page=PagSecundaria`;
+      const fullUrl = `${baseUrl}?page=PagSecundaria&token=${token}`;
+      //const fullUrl = `${baseUrl}?page=PagSecundaria`;
       console.log(`Redirigiendo a: ${fullUrl}`);
       window.open(fullUrl, "_blank"); // Abre la página en una nueva pestaña
     } else {
@@ -67,14 +80,31 @@
       mostrarAviso("Contraseña incorrecta. Acceso denegado.", "error");
     }
 
-    
-/**
-    const baseUrl = "https://script.google.com/a/macros/parqueexplora.org/s/AKfycbyiHrLw5wDax5ImzNxtbo8GGHKZrGFKluWuauDQbJA4/dev";
-    const fullUrl = `${baseUrl}?page=PagSecundaria`;
-    console.log(`Redirigiendo a: ${fullUrl}`); // Verifica la URL en consola
-    window.open(fullUrl, "_blank"); // Abre la página de monitoreo en una nueva pestaña
-    */
   }
+  */
+
+  function goToMonitor() {
+  const userPassword = prompt("Por favor, ingrese la contraseña para acceder al monitoreo:");
+  const PASSWORD = "admin123"; // Cambia esto por tu contraseña real
+
+  if (userPassword === null) {
+    mostrarAviso("Operación cancelada.", "error");
+    return; // Usuario canceló el prompt
+  }
+
+  if (userPassword === PASSWORD) {
+    // Llamar al servidor para generar un token único
+    google.script.run.withSuccessHandler((token) => {
+      const baseUrl = "https://script.google.com/a/macros/parqueexplora.org/s/AKfycbyiHrLw5wDax5ImzNxtbo8GGHKZrGFKluWuauDQbJA4/dev";
+      const fullUrl = `${baseUrl}?page=PagSecundaria&token=${token}`;
+      console.log(`Redirigiendo a: ${fullUrl}`);
+      window.open(fullUrl, "_blank"); // Abre la página en una nueva pestaña
+    }).generarTokenUnico(); // Llama a la función de Google Apps Script
+  } else {
+    mostrarAviso("Contraseña incorrecta. Acceso denegado.", "error");
+  }
+}
+
 
   function mostrarAviso(mensaje, tipo= "error"){
 
@@ -91,6 +121,22 @@
       mensajeAviso.style.display="none";
     }
   }
+
+
+  function actualizarCacheFrontend() {
+  google.script.run
+    .withSuccessHandler((mensaje) => {
+      console.log(mensaje); // Muestra el mensaje en la consola
+      mostrarAviso(mensaje, "success"); // Muestra un mensaje visual en la interfaz
+    })
+    .withFailureHandler((error) => {
+      console.error("Error al actualizar el cache:", error.message);
+      mostrarAviso("Error al actualizar el cache.", "error");
+    })
+    .actualizarCache(); // Llama a la función en Google Apps Script
+}
+
+
 
 
 </script>

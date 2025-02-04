@@ -27,6 +27,13 @@
                  <!-- Botones -->
                 <button id="btnRegistrar" type="button" class="btn btn-primary btn-block mb-2" onclick="registrarIngreso()">Registrar Ingreso</button>
                 <button id="btnMonitorear" type="button" class="btn btn-secondary btn-block" onclick="goToMonitor()"> Monitorear Ingreso</button>
+                 <button id="btnActualizarD" type="button" class="btn btn-secondary btn-block" onclick="actualizarCacheFrontend()">Actualizar datos</button>
+
+                 <div id="spinner" style="display: none; text-align:center;">
+                    <img  src="https://i.imgur.com/pKopwXp.gif" alt="cargando datos..." width="50" height="50">
+                    <p> Registrando... </p>
+                 </div>
+
       </form>
        <div id="mensajeAviso" class="text-center text-danger" style="display: none; margin-top: 10px; font-weight: bold;"></div>
     </div>
