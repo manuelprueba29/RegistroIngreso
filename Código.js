@@ -310,6 +310,31 @@ function getHistorialPorCedulaYMes(cedula, mes) {
   }));
 }
 
+function getHistorialPorDia(dia) {
+    try {
+        const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+        const registroSheet = ss.getSheetByName("RegistroIngreso");
+        const data = registroSheet.getDataRange().getDisplayValues(); // Leer valores como texto
+
+        // Filtrar los registros que coincidan con la fecha seleccionada (YYYY-MM-DD)
+        const registros = data.filter((row) => row[5] === dia);
+
+        // Transformar los registros en objetos para enviar a la interfaz
+        return registros.map((row) => ({
+            documento: row[1],
+            nombre: row[2],
+            jefeDirecto: row[3],
+            area: row[4], 
+            fechaIngreso: row[5], 
+            horaIngreso: row[6], 
+        }));
+    } catch (error) {
+        Logger.log(`Error en getHistorialPorDia: ${error.message}`);
+        throw new Error(`Error al obtener los registros del día: ${error.message}`);
+    }
+}
+
+
 // Generar códigos de barras para cédulas
 function generarCodigosDeBarras() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -331,10 +356,142 @@ function generarCodigosDeBarras() {
 }
 
 
+function exportarDatosAPDF(data) {
+  if (!data || data.length === 0) {
+    Logger.log("❌ No hay datos para exportar.");
+    throw new Error("No hay datos disponibles para exportar.");
+  }
+
+  Logger.log("📌 Datos recibidos:", JSON.stringify(data));
+
+  // Crear un documento en Google Docs
+  const doc = DocumentApp.create("Historial de Ingresos");
+  const body = doc.getBody();
+
+  // Agregar un título
+  body.appendParagraph("Historial de Ingresos")
+      .setHeading(DocumentApp.ParagraphHeading.TITLE)
+      .setBold(true)
+      .setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+
+  body.appendParagraph("\n"); // Agregar un espacio antes de la tabla
+
+  // Crear tabla con encabezados
+  const headers = ["Documento", "Nombre", "Jefe Directo", "Área", "Fecha Ingreso", "Hora Ingreso"];
+  let table = body.appendTable();
+
+  if (!table) {
+    Logger.log("❌ No se pudo crear la tabla en el documento.");
+    throw new Error("Error al crear la tabla en el documento.");
+  }
+
+  // Agregar encabezados
+  const headerRow = table.appendTableRow();
+  headers.forEach(header => {
+    headerRow.appendTableCell(header).setBold(true);
+  });
+
+  // Agregar filas con datos
+  data.forEach(row => {
+    if (Array.isArray(row)) {
+      Logger.log(`📝 Agregando fila: ${JSON.stringify(row)}`);
+
+      const tableRow = table.appendTableRow();
+      row.forEach(cell => {
+        const cellText = cell ? String(cell).trim() : "N/A";
+        Logger.log(`➡️ Agregando celda: ${cellText}`);
+        tableRow.appendTableCell(cellText);
+      });
+
+    } else {
+      Logger.log("⚠️ Advertencia: Se encontró un dato que no es un array:", JSON.stringify(row));
+    }
+  });
+
+  // Forzar guardado del documento antes de la conversión a PDF
+  doc.saveAndClose();
+  Utilities.sleep(2000); // Espera breve para asegurar que el documento se guarda
+
+  // Convertir a PDF
+  const docId = doc.getId();
+  const pdfFile = DriveApp.getFileById(docId).getAs('application/pdf');
+  const folder = DriveApp.getRootFolder();
+  const newPdfFile = folder.createFile(pdfFile).setName("HistorialIngresos.pdf");
+
+  Logger.log("✅ PDF generado en:", newPdfFile.getUrl());
+
+  return newPdfFile.getUrl();
+}
 
 
+/** 
+function exportarDatosAPDF(data) {
+  if (!data || data.length === 0) {
+    Logger.log("❌ No hay datos para exportar.");
+    throw new Error("No hay datos disponibles para exportar.");
+  }
 
+  Logger.log("📌 Datos recibidos:", JSON.stringify(data));
 
+  // Crear un documento en Google Docs
+  const doc = DocumentApp.create("Historial de Ingresos");
+  const body = doc.getBody();
 
+  // Agregar un título centrado
+  body.appendParagraph("Historial de Ingresos")
+      .setHeading(DocumentApp.ParagraphHeading.TITLE)
+      .setBold(true)
+      .setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+
+  body.appendParagraph("\n"); // Espacio antes de la tabla
+
+  // Crear tabla con encabezados
+  const headers = ["Documento", "Nombre", "Jefe Directo", "Área", "Fecha Ingreso", "Hora Ingreso"];
+  let table = body.appendTable();
+  
+  // Agregar encabezados como fila en la tabla
+  let headerRow = table.appendTableRow();
+  headers.forEach(header => {
+    headerRow.appendTableCell(header).setBold(true);
+  });
+
+  // Agregar filas con datos
+  data.forEach(row => {
+    if (Array.isArray(row)) {
+      Logger.log(`📝 Agregando fila: ${JSON.stringify(row)}`);
+
+      const tableRow = table.appendTableRow();
+
+      row.forEach(cell => {
+        let cellText = cell ? cell.toString().trim() : "N/A"; // Convertir a String para evitar errores
+
+        // Agregar saltos de línea para evitar desbordamiento
+        if (cellText.length > 15) {
+          cellText = cellText.replace(/(.{15})/g, "$1\n");
+        }
+
+        tableRow.appendTableCell(cellText); // Agregar celda correctamente
+      });
+
+    } else {
+      Logger.log("⚠️ Advertencia: Se encontró un dato que no es un array:", JSON.stringify(row));
+    }
+  });
+
+  // Forzar guardado del documento antes de la conversión a PDF
+  doc.saveAndClose();
+  Utilities.sleep(2000); // Espera breve para asegurar que el documento se guarda
+
+  // Convertir a PDF
+  const docId = doc.getId();
+  const pdfFile = DriveApp.getFileById(docId).getAs('application/pdf');
+  const folder = DriveApp.getRootFolder();
+  const newPdfFile = folder.createFile(pdfFile).setName("HistorialIngresos.pdf");
+
+  Logger.log("✅ PDF generado en:", newPdfFile.getUrl());
+
+  return newPdfFile.getUrl();
+}
+*/
 
 

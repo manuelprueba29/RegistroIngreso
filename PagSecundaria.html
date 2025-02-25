@@ -20,11 +20,19 @@
         <input type="text" id="searchCedula" class="form-control" placeholder="Ingrese la cédula" name="cedula">
       </div>
 
+        <!-- Campo para filtrar por fecha -->
+      <div class="form-group mb-3">
+        <label for="filterDateD">Fecha:</label>
+        <input type="date" id="filterDateD" class="form-control" placeholder="Seleccione el dia" name="dia">
+      </div>
+
       <!-- Campo para filtrar por mes -->
       <div class="form-group mb-3">
         <label for="filterDate">Mes:</label>
         <input type="month" id="filterDate" class="form-control" placeholder="Seleccione el mes" name="fecha">
       </div>
+
+      
 
       <!-- Campo para seleccionar categoría  onchange="handleFilterChange(this.value)" -->
       <div class="form-group mb-3">
@@ -37,7 +45,7 @@
       </div>
 
      
-
+    <div class="table-container">
       <!-- Tabla para mostrar los resultados -->
       <table class="table table-striped">
         
@@ -55,7 +63,14 @@
         <tbody id="tableBody">
           <!-- Los datos dinámicos se insertarán aquí -->
         </tbody>
+
+        
       </table>
+      
+
+    </div>
+    <button id="botonDescargar" type="button" onclick="descargarPDF()" class="btn btn-primary"> Descargar PDF </button>
+
       <div id="mensajeError" class="text-center text-danger" style="display: none; font-weight: bold;"></div>
     </form>
   </div>

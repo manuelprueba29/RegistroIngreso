@@ -18,6 +18,25 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra para darle profundidad */
   }
 
+  .table-container {
+  max-height: 300px; /* Ajusta la altura máxima de la tabla */
+  overflow-y: auto;  /* Agrega desplazamiento vertical si la tabla crece */
+  display: block;
+  border: 1px solid #ddd; /* Agrega un borde para mejorar la visualización */
+}
+
+.table-container table {
+  width: 100%; /* Mantiene la tabla en el mismo ancho */
+  border-collapse: collapse;
+}
+
+.table-container th, .table-container td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+
   .form-group label {
     font-weight: bold;
   }
@@ -29,4 +48,21 @@
   table th, table td {
     text-align: center;
   }
+  #botonDescargar {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+  margin-top: 20px; /* Espacio entre la tabla y el botón */
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#botonDescargar:hover {
+  background-color: #0056b3;
+}
+
 </style>

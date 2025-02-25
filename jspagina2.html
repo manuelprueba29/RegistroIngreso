@@ -103,6 +103,49 @@ function filtrarpormes() {
 }
 
 
+// Evento para filtrar automáticamente al seleccionar un día
+document.getElementById("filterDateD").addEventListener("change", function () {
+    const fechaSeleccionada = this.value.trim(); // Obtiene la fecha seleccionada
+    if (!validardia(fechaSeleccionada)) return; // Validar la fecha antes de proceder
+    filtrarPorDia(fechaSeleccionada);
+});
+
+// Función para filtrar por día sin importar la cédula
+function filtrarPorDia(fecha) {
+    // Limpiar mensajes previos
+    mostrarMensajeError("");
+
+    google.script.run
+        .withSuccessHandler((data) => {
+            if (!Array.isArray(data) || data.length === 0) {
+                mostrarMensajeError("No se encontraron datos para el día seleccionado.");
+                return;
+            }
+
+            mostrarMensajeError(""); // Limpiar mensaje de error
+            renderTable(data); // Mostrar datos en la tabla
+
+            // Limpiar el campo de fecha después de cargar los datos
+            document.getElementById("filterDateD").value = "";
+        })
+        .withFailureHandler((error) => {
+            console.error("Error en el servidor:", error.message);
+            mostrarMensajeError(`Ocurrió un error al cargar los datos: ${error.message}`);
+        })
+        .getHistorialPorDia(fecha);
+}
+
+// Validar que la fecha sea válida
+function validardia(dia) {
+    if (!dia) {
+        mostrarMensajeError("Por favor, seleccione un día válido.");
+        return false;
+    }
+    return true;
+}
+
+
+
 
 
 // Asociar la función al evento 'change'
@@ -209,6 +252,37 @@ function resetFormFields() {
   // Limpia el mensaje de error
   mostrarMensajeError("");
 }
+
+function descargarPDF() {
+    google.script.run
+        .withSuccessHandler(function(url) {
+            window.open(url, "_blank"); // Abrir el PDF en una nueva pestaña
+        })
+        .withFailureHandler(function(error) {
+            console.error("Error al generar el PDF:", error.message);
+        })
+        .exportarDatosAPDF(obtenerDatosDeLaTabla()); // Pasa los datos al servidor
+}
+
+// Función para obtener los datos visibles en la tabla HTML
+function obtenerDatosDeLaTabla() {
+    const tableBody = document.getElementById("tableBody").getElementsByTagName("tr");
+    let data = [];
+
+    for (let i = 0; i < tableBody.length; i++) {
+        let row = tableBody[i].getElementsByTagName("td");
+        let rowData = [];
+
+        for (let j = 0; j < row.length; j++) {
+            rowData.push(row[j].textContent.trim());
+        }
+
+        data.push(rowData);
+    }
+
+    return data;
+}
+
 
 
 </script>
